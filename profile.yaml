@@ -1,6 +1,6 @@
 # ===== Gautam Bhutani | Mid-level Sales roles | Worldwide | Telegram alerts =====
-window_hours: 2          # only alert on jobs posted within this many hours
-min_score: 55            # 0-100. Lower = more alerts, higher = stricter
+window_hours: 10          # only alert on jobs posted within this many hours
+min_score: 60            # 0-100. Lower = more alerts, higher = stricter
 max_alerts_per_run: 20   # safety cap so your phone doesn't flood
 
 # Adzuna searches (free tier has daily limits, so India is checked every run

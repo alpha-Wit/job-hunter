@@ -9,6 +9,8 @@ abroad_penalty: 15
 adzuna_home_country: in
 adzuna_other_countries: [gb, us, ca, au, sg, de, nl]
 adzuna_query_or: "sales business development account partnership customer success"
+adzuna_india_queries: ["sales executive", "account manager", "business development", "key account", "sales manager", "customer success", "account executive", "corporate sales"]
+adzuna_india_queries_per_run: 3
 
 # Jooble worldwide queries (2 of these are rotated per run)
 jooble_queries:

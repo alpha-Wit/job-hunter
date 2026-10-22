@@ -1,0 +1,105 @@
+# ===== Gautam Bhutani | Mid-level Sales roles | Worldwide | Telegram alerts =====
+window_hours: 2          # only alert on jobs posted within this many hours
+min_score: 55            # 0-100. Lower = more alerts, higher = stricter
+max_alerts_per_run: 20   # safety cap so your phone doesn't flood
+
+# Adzuna searches (free tier has daily limits, so India is checked every run
+# and ONE other country is rotated in each run).
+adzuna_home_country: in
+adzuna_other_countries: [gb, us, ca, au, sg, de, nl]
+adzuna_query_or: "sales business development account partnership customer success"
+
+# Jooble worldwide queries (2 of these are rotated per run)
+jooble_queries:
+  - sales executive
+  - senior sales executive
+  - account executive
+  - business development manager
+  - account manager
+  - sales manager
+  - key account manager
+  - customer success manager
+
+# Counts as "preferred" (full location points). Everything else still alerts, with fewer points.
+preferred_locations: [india, gurugram, gurgaon, delhi, noida, ncr, haryana, punjab, jalandhar, chandigarh, mumbai, bengaluru, bangalore, pune, hyderabad]
+allow_remote: true
+# Remote jobs are kept only if their allowed location matches this (avoids US-only remote roles)
+remote_location_regex: "india|worldwide|anywhere|global|apac|asia|emea|^$"
+
+# Title phrases that mean "this is the kind of role I want"
+target_titles:
+  - sales executive
+  - senior sales executive
+  - account executive
+  - business development executive
+  - business development manager
+  - business development
+  - sales manager
+  - account manager
+  - key account
+  - strategic account
+  - enterprise account
+  - corporate sales
+  - customer success
+  - partnership
+  - client partner
+  - relationship manager
+  - territory manager
+  - sales specialist
+
+title_keywords: [sales, account, partner, business development, growth, revenue, commercial, client]
+
+# Too junior / too senior / unrelated
+exclude_title_keywords:
+  - intern
+  - trainee
+  - fresher
+  - graduate
+  - junior
+  - entry level
+  - entry-level
+  - associate
+  - assistant
+  - telecaller
+  - tele-caller
+  - retail
+  - store
+  - cashier
+  - driver
+  - delivery
+  - warehouse
+  - director
+  - vice president
+  - vp
+  - head of
+  - chief
+  - engineer
+  - developer
+  - designer
+  - recruiter
+
+# Skills from your resume. w = importance (1-3), any = phrases looked for in the JD
+skills:
+  account management:      {w: 3, any: [account management, account manager, portfolio management, key account, strategic account]}
+  relationship building:   {w: 3, any: [relationship management, relationship building, stakeholder management, executive relationship, c-level]}
+  negotiation:             {w: 3, any: [negotiation, negotiate, contract, commercial terms, closing, deal closure]}
+  revenue / targets:       {w: 3, any: [revenue growth, revenue, pipeline, quota, target achievement, sales target, p&l]}
+  lead generation:         {w: 2, any: [lead generation, prospecting, sales funnel, outbound, new business, new logo, hunting]}
+  upsell / cross-sell:     {w: 2, any: [upsell, up-sell, cross-sell, cross sell, expansion, account growth]}
+  business planning:       {w: 2, any: [account plan, business plan, strategic planning, go-to-market, gtm]}
+  partnerships:            {w: 2, any: [partnership, partnerships, channel, alliances, ota]}
+  team leadership:         {w: 1, any: [team leadership, lead a team, coaching, people management, mentor]}
+  retention / onboarding:  {w: 2, any: [retention, onboarding, churn, renewal, customer success]}
+  SaaS / B2B sales:        {w: 3, any: [saas, b2b, enterprise sales, solution selling, consultative selling]}
+  hospitality:             {w: 2, any: [hospitality, hotel, revpar, ota, corporate rates, mice, travel]}
+  banking / payments:      {w: 2, any: [banking, bfsi, payments, payment gateway, fintech, institutional]}
+  data & analytics:        {w: 2, any: [power bi, tableau, excel, dashboard, kpi, analytics, data-driven]}
+  market research:         {w: 1, any: [market research, competitive analysis, market analysis]}
+  languages:               {w: 1, any: [german, spanish, multilingual, dach]}
+
+# Tools JDs often ask for that are NOT on your resume (shown as gaps in alerts)
+gap_skills: [salesforce, hubspot, crm, zoho, sql, python, gainsight, jira, sap, oracle]
+
+# Optional: company career boards (Greenhouse / Lever tokens), no key needed
+greenhouse_boards: []
+lever_boards: []

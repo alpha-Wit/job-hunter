@@ -35,9 +35,63 @@ def from_epoch(x):
     except Exception:
         return None
 
-def mk(source, jid, title, company, location, url, posted, text):
+def mk(source, jid, title, company, location, url, posted, text, salary_inr=None):
     return {"id": f"{source}:{jid}", "source": source, "title": title or "", "company": company or "",
-            "location": location or "", "url": url, "posted": posted, "text": strip_html(text)}
+            "location": location or "", "url": url, "posted": posted, "text": strip_html(text),
+            "salary_inr": salary_inr}
+
+
+# ---------- salary helpers (all values converted to INR per year) ----------
+FX = {"INR": 1, "USD": 85, "GBP": 110, "EUR": 95, "CAD": 62, "AUD": 55, "SGD": 65, "AED": 23}
+ADZUNA_CCY = {"in": "INR", "gb": "GBP", "us": "USD", "ca": "CAD", "au": "AUD", "sg": "SGD", "de": "EUR", "nl": "EUR"}
+
+def to_inr(amount, currency="INR", interval="year"):
+    """Convert a salary amount to INR per year. Returns None if amount is missing."""
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError):
+        return None
+    if amount <= 0:
+        return None
+    mult = {"year": 1, "month": 12, "week": 52, "day": 260, "hour": 2000}.get(interval, 1)
+    return amount * mult * FX.get(currency, 1)
+
+def parse_salary(text, default_ccy="INR"):
+    """Best-effort parse of a salary string like '15-20 LPA', 'Rs 1.5 lakh per month', '$80k - $100k'."""
+    if not text:
+        return None
+    t = str(text).lower().replace(",", "")
+    if not re.search(r"\d", t):
+        return None
+    ccy = default_ccy
+    if re.search(r"₹|\brs\b|\binr\b|lpa|lakh|lac\b|\bcr\b|crore", t): ccy = "INR"
+    elif re.search(r"\$|usd", t): ccy = "USD"
+    elif re.search(r"£|gbp", t): ccy = "GBP"
+    elif re.search(r"€|eur", t): ccy = "EUR"
+    elif "aed" in t: ccy = "AED"
+    elif "sgd" in t: ccy = "SGD"
+    pairs = re.findall(r"(\d+(?:\.\d+)?)\s*(k|lpa|lakhs?|lacs?|l\b|cr|crores?)?", t)
+    if not pairs:
+        return None
+    unit = next((u for _, u in reversed(pairs) if u), "")
+    vals = []
+    for num, u in pairs:
+        v = float(num)
+        u = u or (unit if v < 1000 else "")
+        if u == "k": v *= 1e3
+        elif u in ("lpa", "l") or u.startswith(("lakh", "lac")): v *= 1e5
+        elif u == "cr" or u.startswith("crore"): v *= 1e7
+        vals.append(v)
+    top = max(vals)
+    if top < 100:  # tiny number with no unit, e.g. an hourly rate or noise
+        return None
+    interval = "month" if re.search(r"month|/mo\b|monthly|pm\b", t) else "hour" if re.search(r"hour|/hr|hourly", t) else "year"
+    return to_inr(top, ccy, interval)
+
+def fmt_salary(inr):
+    if not inr:
+        return "not listed"
+    return f"~₹{inr / 1e5:.0f} LPA"
 
 def rotate(items, n=1):
     if not items:
@@ -57,20 +111,22 @@ def fetch_adzuna(cfg):
     out = []
     for c, q in calls:
         try:
-            params = {"app_id": app_id, "app_key": key, "results_per_page": 50,
-                      "max_days_old": 1, "sort_by": "date"}
+            params = {"app_id": app_id, "app_key": key, "results_per_page": 50, "max_days_old": 1, "sort_by": "date"}
             params["what" if c == home else "what_or"] = q
             r = requests.get(f"https://api.adzuna.com/v1/api/jobs/{c}/search/1", headers=HEADERS,
                              timeout=TIMEOUT, params=params)
             r.raise_for_status()
             for j in r.json().get("results", []):
                 loc = j.get("location", {}).get("display_name") or ""
+                predicted = str(j.get("salary_is_predicted", "0")) == "1"
+                sal = None if predicted else to_inr(j.get("salary_max") or j.get("salary_min"), ADZUNA_CCY.get(c, "USD"))
                 out.append(mk("adzuna", j["id"], j.get("title"), j.get("company", {}).get("display_name"),
-                              f"{loc} [{c.upper()}]", j.get("redirect_url"), parse_iso(j.get("created")), j.get("description")))
+                              f"{loc} [{c.upper()}]", j.get("redirect_url"), parse_iso(j.get("created")),
+                              j.get("description"), sal))
         except Exception as e:
             print(f"[adzuna:{c}:{q}] {e}", file=sys.stderr)
     return out
-    
+
 def fetch_jooble(cfg):
     key = os.getenv("JOOBLE_KEY")
     if not key:
@@ -82,7 +138,7 @@ def fetch_jooble(cfg):
             r.raise_for_status()
             for j in r.json().get("jobs", []):
                 out.append(mk("jooble", j["id"], j.get("title"), j.get("company"), j.get("location"),
-                              j.get("link"), parse_iso(j.get("updated")), j.get("snippet")))
+                              j.get("link"), parse_iso(j.get("updated")), j.get("snippet"), parse_salary(j.get("salary"))))
         except Exception as e:
             print(f"[jooble:{q}] {e}", file=sys.stderr)
     return out
@@ -100,7 +156,8 @@ def fetch_remotive(cfg):
                 if not re.search(cfg["remote_location_regex"], loc.strip(), re.I):
                     continue
                 out.append(mk("remotive", j["id"], j.get("title"), j.get("company_name"), f"Remote ({loc})",
-                              j.get("url"), parse_iso(j.get("publication_date")), j.get("description")))
+                              j.get("url"), parse_iso(j.get("publication_date")), j.get("description"),
+                              parse_salary(j.get("salary"), "USD")))
         except Exception as e:
             print(f"[remotive:{q}] {e}", file=sys.stderr)
     return out
@@ -119,7 +176,8 @@ def fetch_remoteok(cfg):
             if loc and not re.search(cfg["remote_location_regex"], loc.strip(), re.I):
                 continue
             out.append(mk("remoteok", j["id"], j.get("position"), j.get("company"), f"Remote ({loc or 'Worldwide'})",
-                          j.get("url"), from_epoch(j.get("epoch")), j.get("description")))
+                          j.get("url"), from_epoch(j.get("epoch")), j.get("description"),
+                          to_inr(j.get("salary_max") or j.get("salary_min"), "USD")))
     except Exception as e:
         print(f"[remoteok] {e}", file=sys.stderr)
     return out
@@ -160,7 +218,10 @@ def fetch_lever(cfg):
             r.raise_for_status()
             for j in r.json():
                 out.append(mk("lever", j["id"], j.get("text"), b, j.get("categories", {}).get("location"),
-                              j.get("hostedUrl"), from_epoch(j.get("createdAt")), j.get("descriptionPlain")))
+                              j.get("hostedUrl"), from_epoch(j.get("createdAt")), j.get("descriptionPlain"),
+                              to_inr((j.get("salaryRange") or {}).get("max"), (j.get("salaryRange") or {}).get("currency", "USD"),
+                                     {"per-year-salary": "year", "per-month-salary": "month", "per-hour-wage": "hour"}.get(
+                                         (j.get("salaryRange") or {}).get("interval"), "year"))))
         except Exception as e:
             print(f"[lever:{b}] {e}", file=sys.stderr)
     return out
@@ -195,7 +256,16 @@ def score_job(j, cfg):
     # location fit 0-10 (anywhere in the world is OK, preferred places score higher)
     loc = j["location"].lower()
     preferred = any(p in loc for p in cfg["preferred_locations"]) or (cfg["allow_remote"] and "remote" in loc)
+    if cfg.get("india_only") and not preferred:
+        return None
     l_score = 10 if preferred else -cfg.get("abroad_penalty", 15)
+
+    # salary filter (annual, in INR)
+    sal = j.get("salary_inr")
+    if sal is not None and sal < cfg.get("min_salary_inr", 0):
+        return None
+    if sal is None and cfg.get("require_salary_listed"):
+        return None
 
     # experience-level sanity check for mid-level roles
     penalty = 0
@@ -224,6 +294,7 @@ def format_msg(j, r):
     lines = [f"🚨 <b>{e(j['title'])}</b>",
              f"🏢 {e(j['company'])}  |  📍 {e(j['location'] or 'n/a')}",
              f"⏱ Posted {ago(j['posted'])}  |  🎯 Match <b>{r['score']}%</b>",
+             f"💰 Salary: {fmt_salary(j.get('salary_inr'))}",
              f"✅ Your skills: {e(', '.join(r['matched'][:8]) or '-')}"]
     if r["gaps"]:
         lines.append(f"⚠️ JD also mentions: {e(', '.join(r['gaps']))}")
@@ -258,6 +329,7 @@ def main():
     args = ap.parse_args()
 
     cfg = yaml.safe_load((ROOT / "profile.yaml").read_text())
+    FX.update(cfg.get("fx_to_inr", {}))
     window = timedelta(hours=args.hours or cfg["window_hours"])
     now = datetime.now(timezone.utc)
     seen = load_seen()

@@ -1,16 +1,23 @@
 # ===== Gautam Bhutani | Mid-level Sales roles | Worldwide | Telegram alerts =====
-window_hours: 24          # only alert on jobs posted within this many hours
-min_score: 45            # 0-100. Lower = more alerts, higher = stricter
-max_alerts_per_run: 50   # safety cap so your phone doesn't flood
-abroad_penalty: 15
+window_hours: 10         # only alert on jobs posted within this many hours
+min_score: 55            # 0-100. Lower = more alerts, higher = stricter
+max_alerts_per_run: 20   # safety cap so your phone doesn't flood
+abroad_penalty: 15       # points removed from jobs outside India (0 = treat equally)
+india_only: false        # true = drop all jobs outside India
+
+# ---- Salary filter ----
+min_salary_inr: 1500000          # 15 lakh per year
+require_salary_listed: false     # false = also alert when salary is NOT listed (most Indian ads hide it)
+                                 # true  = alert ONLY when a listed salary is >= min_salary_inr
+fx_to_inr: {INR: 1, USD: 85, GBP: 110, EUR: 95, CAD: 62, AUD: 55, SGD: 65, AED: 23}
 
 # Adzuna searches (free tier has daily limits, so India is checked every run
 # and ONE other country is rotated in each run).
 adzuna_home_country: in
 adzuna_other_countries: [gb, us, ca, au, sg, de, nl]
-adzuna_query_or: "sales business development account partnership customer success"
 adzuna_india_queries: ["sales executive", "account manager", "business development", "key account", "sales manager", "customer success", "account executive", "corporate sales"]
 adzuna_india_queries_per_run: 3
+adzuna_query_or: "sales business development account partnership customer success"
 
 # Jooble worldwide queries (2 of these are rotated per run)
 jooble_queries:

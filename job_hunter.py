@@ -190,7 +190,7 @@ def score_job(j, cfg):
     # location fit 0-10 (anywhere in the world is OK, preferred places score higher)
     loc = j["location"].lower()
     preferred = any(p in loc for p in cfg["preferred_locations"]) or (cfg["allow_remote"] and "remote" in loc)
-    l_score = 10 if preferred else 6
+    l_score = 10 if preferred else -cfg.get("abroad_penalty", 15)
 
     # experience-level sanity check for mid-level roles
     penalty = 0

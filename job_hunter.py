@@ -50,22 +50,27 @@ def fetch_adzuna(cfg):
     app_id, key = os.getenv("ADZUNA_APP_ID"), os.getenv("ADZUNA_APP_KEY")
     if not (app_id and key):
         return []
-    countries = [cfg["adzuna_home_country"]] + rotate(cfg["adzuna_other_countries"], 1)
+    home = cfg["adzuna_home_country"]
+    calls = [(home, q) for q in rotate(cfg["adzuna_india_queries"], cfg.get("adzuna_india_queries_per_run", 3))]
+    for c in rotate(cfg["adzuna_other_countries"], 1):
+        calls.append((c, cfg["adzuna_query_or"]))
     out = []
-    for c in countries:
+    for c, q in calls:
         try:
-            r = requests.get(f"https://api.adzuna.com/v1/api/jobs/{c}/search/1", headers=HEADERS, timeout=TIMEOUT,
-                params={"app_id": app_id, "app_key": key, "results_per_page": 50, "what_or": cfg["adzuna_query_or"],
-                        "max_days_old": 1, "sort_by": "date"})
+            params = {"app_id": app_id, "app_key": key, "results_per_page": 50,
+                      "max_days_old": 1, "sort_by": "date"}
+            params["what" if c == home else "what_or"] = q
+            r = requests.get(f"https://api.adzuna.com/v1/api/jobs/{c}/search/1", headers=HEADERS,
+                             timeout=TIMEOUT, params=params)
             r.raise_for_status()
             for j in r.json().get("results", []):
                 loc = j.get("location", {}).get("display_name") or ""
                 out.append(mk("adzuna", j["id"], j.get("title"), j.get("company", {}).get("display_name"),
                               f"{loc} [{c.upper()}]", j.get("redirect_url"), parse_iso(j.get("created")), j.get("description")))
         except Exception as e:
-            print(f"[adzuna:{c}] {e}", file=sys.stderr)
+            print(f"[adzuna:{c}:{q}] {e}", file=sys.stderr)
     return out
-
+    
 def fetch_jooble(cfg):
     key = os.getenv("JOOBLE_KEY")
     if not key:

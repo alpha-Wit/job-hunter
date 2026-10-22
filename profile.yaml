@@ -1,7 +1,8 @@
 # ===== Gautam Bhutani | Mid-level Sales roles | Worldwide | Telegram alerts =====
 window_hours: 10          # only alert on jobs posted within this many hours
 min_score: 60            # 0-100. Lower = more alerts, higher = stricter
-max_alerts_per_run: 20   # safety cap so your phone doesn't flood
+max_alerts_per_run: 50   # safety cap so your phone doesn't flood
+abroad_penalty: 15
 
 # Adzuna searches (free tier has daily limits, so India is checked every run
 # and ONE other country is rotated in each run).
@@ -21,8 +22,7 @@ jooble_queries:
   - customer success manager
 
 # Counts as "preferred" (full location points). Everything else still alerts, with fewer points.
-preferred_locations: [india, gurugram, gurgaon, delhi, noida, ncr, haryana, punjab, jalandhar, chandigarh, mumbai, bengaluru, bangalore, pune, hyderabad]
-allow_remote: true
+preferred_locations: [india, "[in]", gurugram, gurgaon, delhi, noida, ncr, haryana, punjab, jalandhar, chandigarh, ludhiana, mumbai, pune, bengaluru, bangalore, hyderabad, chennai, kolkata, ahmedabad, jaipur, lucknow, kochi, indore, maharashtra, karnataka, tamil nadu, telangana, gujarat, rajasthan, uttar pradesh, kerala, west bengal]allow_remote: true
 # Remote jobs are kept only if their allowed location matches this (avoids US-only remote roles)
 remote_location_regex: "india|worldwide|anywhere|global|apac|asia|emea|^$"
 
